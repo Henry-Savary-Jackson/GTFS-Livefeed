@@ -651,6 +651,8 @@ def generate_gtfs_zip(
 
 def add_gtfs_tables_to_db(engine: sqlalchemy.Engine, df_dict):
     for tablename in df_dict:
+        if (df_dict[tablename] is None):
+            continue
         df: pd.DataFrame = (
             df_dict[tablename]
             .dropna(axis=1, how="all")
