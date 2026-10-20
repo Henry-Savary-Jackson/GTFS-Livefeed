@@ -27,4 +27,4 @@ RUN chmod -R u+rw ./server_files
 
 USER flaskuser
 
-CMD gunicorn --worker-class gevent -b 0.0.0.0:5000 --timeout=300 --log-level=debug --log-file server_files/shared_private/server.log app:app & celery -A celery_app.celery_app  worker -B --logfile server_files/shared_private/celery.log 
+CMD gunicorn --worker-class gevent -b 0.0.0.0:5000 --timeout=300 --log-level=info --log-file server_files/shared_private/server.log app:app & celery -A celery_app.celery_app  worker -B --logfile server_files/shared_private/celery.log 

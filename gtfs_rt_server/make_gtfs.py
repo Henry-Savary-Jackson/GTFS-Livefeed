@@ -94,16 +94,28 @@ def read_sheet_as_df(worksheet, **kwargs):
         raise e
 
 def getDiscountDf(workbook):
-    return read_sheet_as_df(workbook["Discounts"])
+    try:
+        return read_sheet_as_df(workbook["Discounts"])
+    except KeyError:
+        return None
 
 def getDistMatrixDataFrame(workbook):
-    return read_sheet_as_df(workbook["Distance Matrix"])
+    try:
+        return read_sheet_as_df(workbook["Distance Matrix"])
+    except KeyError:
+        return None
 
 def getTicketTypeDataframe(workbook):
-    return read_sheet_as_df(workbook["Ticket prices"])
+    try :
+        return read_sheet_as_df(workbook["Ticket prices"])
+    except KeyError:
+        return None
 
 def getKmZoneDataframe(workbook):
-    return read_sheet_as_df(workbook["Km Zones"])
+    try :
+        return read_sheet_as_df(workbook["Km Zones"])
+    except KeyError:
+        return None
 
 def getRoutesDataFrame(workbook):
     df = read_sheet_as_df(workbook["Routes"])
@@ -130,7 +142,7 @@ def getStopsDataFrame(workbook):
 
     station_suffix = "-STATION"
 
-    stops_df["location_type"] = stops_df["location_type"].astype("int64")
+    stops_df["location_type"] = stops_df["location_type"].fillna(value=1).astype("int64")
     stops_df["stop_id"] = stops_df["stop_id"].str.upper().str.strip()
     stops_df["zone_id"] = stops_df["stop_id"]
     stations = stops_df.loc[stops_df["location_type"] == 1]
@@ -494,24 +506,27 @@ def generate_gtfs_zip(
     km_zone_df = getKmZoneDataframe(workbook)
     ticket_types_df = getTicketTypeDataframe(workbook)
     distance_matrix_df  = getDistMatrixDataFrame(workbook)
-    km_zones = handle_km_zones(km_zone_df)
-    ticket_types_dict = handle_ticket_types(ticket_types_df,km_zones)
+
+    km_zones = handle_km_zones(km_zone_df) if km_zone_df else None
+    ticket_types_dict = handle_ticket_types(ticket_types_df,km_zones) if km_zones else None
+
     error = False
     df_dict = {}
     try :
-        fare_rules_df = pd.DataFrame()
-        fare_attributes_df = pd.DataFrame()
-        try :
-            fare_rules_df , fare_attributes_df = handle_dist_matrix(distance_matrix_df, km_zones, ticket_types_dict, stops)
-        except Exception as e:
-            print("error",  e)
-            if update_method:
-                update_method(
-                    status="error-cont",
-                    message=f'\nError in distance matrix:\n{e}\n',
-                )
-            error = True
-            errors.append(f'\nError in distance matrix:\n{e}\n')
+        fare_rules_df = None 
+        fare_attributes_df = None 
+        if km_zones :
+            try :
+                fare_rules_df , fare_attributes_df = handle_dist_matrix(distance_matrix_df, km_zones, ticket_types_dict, stops)
+            except Exception as e:
+                print("error",  e)
+                if update_method:
+                    update_method(
+                        status="error-cont",
+                        message=f'\nError in distance matrix:\n{e}\n',
+                    )
+                error = True
+                errors.append(f'\nError in distance matrix:\n{e}\n')
 
         if update_method:
             update_method(message=f"Done getting all ticket pricing informations.")
@@ -610,7 +625,8 @@ def generate_gtfs_zip(
     try:
         with zipfile.ZipFile(export_location, "w") as gtfs_zip:
             for filename in df_dict:
-                write_df_to_zipfile(gtfs_zip, filename, df_dict[filename])
+                if (df_dict[filename] is not None):
+                    write_df_to_zipfile(gtfs_zip, filename, df_dict[filename])
 
     except Exception as e:
         if update_method:
@@ -670,8 +686,8 @@ def write_df_to_zipfile(zip_file, filename, df):
 
 if __name__ == "__main__":
     generate_gtfs_zip(
-        open("/home/hsj/Downloads/Google Maps schedules latest PRASA Western Cape (31).xlsx", "rb"),
+        open("/home/hsj/Desktop/kzn_timetables/Google_Maps_schedules_PRASA_KZN Final(17).xlsx", "rb"),
         "./gtfs.zip",
-        "./server_files/gtfs-validator-6.0.0-cli.jar",
+        "./server_files/global/gtfs-validator-6.0.0-cli.jar",
         "server_files/shared_private/result",
     )

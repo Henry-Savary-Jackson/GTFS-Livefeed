@@ -8,5 +8,6 @@ with app.app_context():
     add_role("view")
     add_role("edit")
     add_role("gtfs")
+    app.logger.debug((app.config["PRASA_ADMIN_USERNAME"], app.config["PRASA_ADMIN_PASS"]))
     insert_user(app.config["ADMIN_USERNAME"], app.config["ADMIN_PASS"], ["admin", "view", "edit", "gtfs", "excel"])
     insert_user(app.config["PRASA_ADMIN_USERNAME"], app.config["PRASA_ADMIN_PASS"], [ "view", "edit", "gtfs", "excel"])
